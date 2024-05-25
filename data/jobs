@@ -1,0 +1,29 @@
+import sys
+from awsglue.transforms import *
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from awsglue.context import GlueContext
+from awsglue.job import Job
+
+args = getResolvedOptions(sys.argv, ['JOB_NAME'])
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args['JOB_NAME'], args)
+
+# Script generated for node AWS Glue Data Catalog
+AWSGlueDataCatalog_node1716592753294 = glueContext.create_dynamic_frame.from_catalog(database="dataengng_youtube_cleaned", table_name="raw_statistics", transformation_ctx="AWSGlueDataCatalog_node1716592753294")
+
+# Script generated for node AWS Glue Data Catalog
+AWSGlueDataCatalog_node1716592662225 = glueContext.create_dynamic_frame.from_catalog(database="dataengng_youtube_cleaned", table_name="clean_statistics_reference_data", transformation_ctx="AWSGlueDataCatalog_node1716592662225")
+
+# Script generated for node Join
+Join_node1716592815604 = Join.apply(frame1=AWSGlueDataCatalog_node1716592753294, frame2=AWSGlueDataCatalog_node1716592662225, keys1=["category_id"], keys2=["id"], transformation_ctx="Join_node1716592815604")
+
+# Script generated for node Amazon S3
+AmazonS3_node1716593419467 = glueContext.getSink(path="s3://dataengng-on-youtube-analytics-useast1-dev", connection_type="s3", updateBehavior="UPDATE_IN_DATABASE", partitionKeys=["region", "category_id"], enableUpdateCatalog=True, transformation_ctx="AmazonS3_node1716593419467")
+AmazonS3_node1716593419467.setCatalogInfo(catalogDatabase="db_youtube_analytics",catalogTableName="final_analytics")
+AmazonS3_node1716593419467.setFormat("glueparquet", compression="snappy")
+AmazonS3_node1716593419467.writeFrame(Join_node1716592815604)
+job.commit()
